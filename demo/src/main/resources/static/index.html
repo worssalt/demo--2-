@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📦 Gestión de Productos</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f6f8fa;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      background-color: #0078d7;
+      color: white;
+      text-align: center;
+      padding: 1.5rem 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-weight: 600;
+      font-size: 1.8rem;
+    }
+
+    header p {
+      margin: 0.2rem 0 0;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 12px;
+      padding: 25px 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    h2 {
+      margin-bottom: 15px;
+      color: #0078d7;
+    }
+
+    form {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    input, select, button {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #0078d7;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      color: white;
+      background-color: #0078d7;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #005fa3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #0078d7;
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background-color: #f2f6fc;
+    }
+
+    .acciones button {
+      margin: 0 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .acciones .editar {
+      background-color: #ffc107;
+      color: #333;
+    }
+
+    .acciones .eliminar {
+      background-color: #dc3545;
+    }
+
+    .acciones .editar:hover {
+      background-color: #e0a800;
+    }
+
+    .acciones .eliminar:hover {
+      background-color: #c82333;
+    }
+
+    .filtros {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .filtros select, .filtros input {
+      width: 180px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📦 Sistema de Gestión de Productos</h1>
+    <p>Aquí puedes registrar, editar, eliminar y buscar productos fácilmente.</p>
+  </header>
+
+  <main>
+    <h2>Agregar o Editar Producto</h2>
+    <form id="formProducto">
+      <input type="hidden" id="id" />
+      <input type="text" id="nombre" placeholder="Nombre" required />
+      <select id="categoria" required>
+        <option value="">Seleccione categoría</option>
+        <option value="Comida">Comida</option>
+        <option value="Bebidas">Bebidas</option>
+      </select>
+      <input type="number" id="precio" placeholder="Precio" required step="0.01" />
+      <button type="submit">Guardar</button>
+    </form>
+
+    <div class="filtros">
+      <input type="text" id="buscar" placeholder="Buscar por nombre..." />
+      <select id="filtroCategoria">
+        <option value="">Todas las categorías</option>
+        <option value="Comida">Comida</option>
+        <option value="Bebidas">Bebidas</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio (S/)</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProductos"></tbody>
+    </table>
+  </main>
+
+  <script>
+    const API_URL = "http://localhost:8080/api/productos";
+    const tabla = document.getElementById("tablaProductos");
+    const form = document.getElementById("formProducto");
+    const buscar = document.getElementById("buscar");
+    const filtroCategoria = document.getElementById("filtroCategoria");
+    let productos = [];
+
+    async function cargarProductos() {
+      const res = await fetch(API_URL);
+      productos = await res.json();
+      mostrarProductos(productos);
+    }
+
+    function mostrarProductos(lista) {
+      tabla.innerHTML = "";
+      if (lista.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="5" class="text-muted">No hay productos registrados.</td></tr>`;
+        return;
+      }
+
+      lista.forEach(p => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${p.id}</td>
+          <td>${p.nombre}</td>
+          <td>${p.categoria}</td>
+          <td>${p.precio.toFixed(2)}</td>
+          <td class="acciones">
+            <button class="editar" onclick="editarProducto(${p.id})">Editar</button>
+            <button class="eliminar" onclick="eliminarProducto(${p.id})">Eliminar</button>
+          </td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("id").value;
+      const nombre = document.getElementById("nombre").value.trim();
+      const categoria = document.getElementById("categoria").value;
+      const precio = parseFloat(document.getElementById("precio").value);
+
+      const producto = { nombre, categoria, precio };
+
+      if (id) {
+        await fetch(`${API_URL}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(producto)
+        });
+      } else {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(producto)
+        });
+      }
+
+      form.reset();
+      await cargarProductos();
+    });
+
+    async function eliminarProducto(id) {
+      if (confirm("¿Seguro que deseas eliminar este producto?")) {
+        await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+        await cargarProductos();
+      }
+    }
+
+    function editarProducto(id) {
+      const p = productos.find(prod => prod.id === id);
+      if (!p) return;
+      document.getElementById("id").value = p.id;
+      document.getElementById("nombre").value = p.nombre;
+      document.getElementById("categoria").value = p.categoria;
+      document.getElementById("precio").value = p.precio;
+    }
+
+    function filtrarProductos() {
+      const texto = buscar.value.toLowerCase();
+      const categoriaSel = filtroCategoria.value;
+      const filtrados = productos.filter(p =>
+        (p.nombre.toLowerCase().includes(texto)) &&
+        (categoriaSel === "" || p.categoria === categoriaSel)
+      );
+      mostrarProductos(filtrados);
+    }
+
+    buscar.addEventListener("input", filtrarProductos);
+    filtroCategoria.addEventListener("change", filtrarProductos);
+
+    cargarProductos();
+  </script>
+</body>
+</html>
